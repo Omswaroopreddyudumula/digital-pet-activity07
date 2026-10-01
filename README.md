@@ -128,6 +128,7 @@ Result: all 14 tests pass.
 ## Workflow evidence
 
 - Pull request: [#1 feat: digital pet care loop, session controls, visual polish](https://github.com/Omswaroopreddyudumula/digital-pet-activity07/pull/1), merged into `main` after `flutter analyze` (no issues) and `flutter test` (all passed).
+- Issues: [#2 Care systems](https://github.com/Omswaroopreddyudumula/digital-pet-activity07/issues/2), [#3 Pet personality](https://github.com/Omswaroopreddyudumula/digital-pet-activity07/issues/3), both completed in #1.
 
 ## Asset attribution
 
