@@ -6,20 +6,20 @@ A Flutter pet-care app that turns user actions and time into visible state chang
 
 ## Developer and workstreams
 
-Solo submission: Om Swaroop Reddy Udumula · Undergraduate pathway. _(Note the instructor approval for solo work here, if given.)_
+Solo submission: Om Swaroop Reddy Udumula · Undergraduate pathway. Completed individually because I was absent from the in-class team session; both workstreams were implemented by me.
 
-Both workstreams were built on separate branches and merged through pull requests to keep the history traceable:
+Both workstreams are tracked below; the combined change was built on the `feature/digital-pet` branch and merged through pull request #1:
 
 | Workstream | Branch | Scope |
 |---|---|---|
-| Care Systems | `team-1/care-systems` | Care loop, bounded meters, hunger/win timers, outcomes, session controls |
-| Pet Personality | `team-2/pet-personality` | Derived messages, mood feedback, pet asset, motion/accessibility polish |
+| Care Systems | `feature/digital-pet` | Care loop, bounded meters, hunger/win timers, outcomes, session controls |
+| Pet Personality | `feature/digital-pet` | Derived messages, mood feedback, pet asset, motion/accessibility polish |
 
 ## Setup, run, test, build
 
 ```bash
-git clone <repository-url>
-cd <repository-folder>
+git clone https://github.com/Omswaroopreddyudumula/digital-pet-activity07.git
+cd digital-pet-activity07
 flutter pub get
 flutter analyze
 flutter test
@@ -58,8 +58,8 @@ Mood thresholds (shared by label, icon, tint, scale, and message): > 70 Happy / 
 
 | Feature | User flow | State changes and why | PR |
 |---|---|---|---|
-| Session controls (pause/resume + restart) | Tap Pause → timers stop, actions disabled, message "Taking a little break...". Tap Resume → play continues. Restart button appears after win/loss. | `_isPaused` toggles. Pause cancels the hunger timer and the win timer so no state changes while paused. Resume starts one fresh hunger timer and re-runs `_updateOutcome()`, starting a **new** 3-minute streak (pausing breaks "continuous"). | _PR #_ |
-| Visual polish & accessible motion (bundle = 1 feature) | Feed/Play/tap → pet bounces; meters glide; mood and speech crossfade; tint and size change at thresholds. | Bounce uses short-lived `_bounce` with a cancellable timer; message, tint, scale, mood are getters derived from `_happiness`/`_hunger`/outcome flags, never stored. `MediaQuery.disableAnimations` switches all durations to zero and skips the bounce. | _PR #_ |
+| Session controls (pause/resume + restart) | Tap Pause → timers stop, actions disabled, message "Taking a little break...". Tap Resume → play continues. Restart button appears after win/loss. | `_isPaused` toggles. Pause cancels the hunger timer and the win timer so no state changes while paused. Resume starts one fresh hunger timer and re-runs `_updateOutcome()`, starting a **new** 3-minute streak (pausing breaks "continuous"). | [#1](https://github.com/Omswaroopreddyudumula/digital-pet-activity07/pull/1) |
+| Visual polish & accessible motion (bundle = 1 feature) | Feed/Play/tap → pet bounces; meters glide; mood and speech crossfade; tint and size change at thresholds. | Bounce uses short-lived `_bounce` with a cancellable timer; message, tint, scale, mood are getters derived from `_happiness`/`_hunger`/outcome flags, never stored. `MediaQuery.disableAnimations` switches all durations to zero and skips the bounce. | [#1](https://github.com/Omswaroopreddyudumula/digital-pet-activity07/pull/1) |
 
 Effects implemented: action bounce (`AnimatedScale`), living meters (`TweenAnimationBuilder`), expression switch (`AnimatedSwitcher` + `ValueKey`), mood tint & size, derived pet speech, reduced-motion support.
 
@@ -78,36 +78,61 @@ Effects implemented: action bounce (`AnimatedScale`), living meters (`TweenAnima
 
 ## Manual test matrix
 
-_Fill in with real observed values. Use a temporary 5-second hunger interval for timer tests, then restore 30 seconds before the release build._
+Manual rows were tested on the release APK installed on a Pixel 8 (API 37.2) emulator; screenshots are in [`screenshots/`](screenshots/). Rows marked *automated* are verified by widget tests.
 
-| Scenario | Expected | Observed (before → after) | Pass? |
+| Scenario | Expected | Observed | Pass? |
 |---|---|---|---|
-| Feed at hunger 5 | Hunger 0; happiness −20 (resulting hunger < 30) | | |
-| Feed at hunger 95 | Hunger 85; happiness +10 | | |
-| Play at happiness 95 | Happiness 100 (clamped) | | |
-| Happiness 29 / 30 / 70 / 71 | Unhappy-red-small / Neutral-yellow / Neutral-yellow / Happy-green-large, text label always shown | | |
-| > 80 for 2:59, then drops to 80 | No win; streak text clears | | |
-| > 80 again for 3:00 | Win; hunger timer stops; actions disabled | | |
-| Hunger 95 → 100, then another tick | First tick no penalty; second tick hunger stays 100, happiness −20 | | |
-| Hunger 100 and happiness ≤ 10 | Game over; actions disabled until Restart | | |
-| Leave screen / close app with timer running | No "setState() called after dispose()" in console | | |
-| Pause during happy streak, resume | Timers stop while paused; streak restarts on resume | | |
-| Reset during running streak | Win timer cancelled; exactly one hunger timer (hunger rises by 5 once per interval) | | |
-| Reduced motion on vs. off | No bounce/glide/crossfade when on; labels and values unchanged | | |
-| Release APK installed on device | Launches; Feed/Play/Pause/Reset work | | |
+| Happiness 70 | Neutral, yellow, normal size | Happiness 70, hunger 30: "Mood: Neutral", yellow tint (`02_neutral_70.png`) | ✅ |
+| Happiness 30 | Neutral, yellow; "Play with me?" (≤ 30) | Happiness 30, hunger 10: "Mood: Neutral", yellow, "Play with me?" (`03_neutral_30.png`) | ✅ |
+| Happiness 29 / 71 | Unhappy-red-0.94 / Happy-green-1.06 | Not reachable with buttons (steps of 10); verified by `test/mood_threshold_test.dart` (29, 30, 70, 71 all pass) | ✅ |
+| Happiness 10 | Unhappy, red, smaller | Happiness 10, hunger 0 after Feed ×5 (overfed): "Mood: Unhappy", red, smaller pet (`04_unhappy_10.png`) | ✅ |
+| Happiness above 80 | Happy, green, larger; win streak starts | Happiness 90, hunger 70 after Play ×4: "Mood: Happy", green, "Happy streak running" (`05_happy_90.png`) | ✅ |
+| Pause | Timers stop; Feed/Play disabled | "Paused: timers are stopped", Feed/Play greyed out, Resume shown (`06_paused.png`) | ✅ |
+| Happiness > 80 for 3:00 after resume | Win; actions disabled | Win at happiness 90: "You win!", "Best day ever!", Feed/Play/Pause disabled, Restart shown (`07_win.png`) | ✅ |
+| Hunger timer | +5 every 30 s | Hunger rose from 50 to 80 while idle with happiness unchanged (`01_neutral_50.png`) | ✅ |
+| Release APK installed on device | Launches; actions work | Installed with `flutter install`; Feed, Play, Pause/Resume, Reset all work | ✅ |
+| Feed at hunger 5 | Hunger clamps to 0; resulting hunger < 30 → happiness −20 | 50/5 → happiness 30, hunger 0 (automated: `game_rules_test.dart`) | ✅ |
+| Feed at hunger 95 | Hunger −10; happiness +10 | 50/95 → happiness 60, hunger 85 (automated) | ✅ |
+| Play at happiness 95 | Clamped to 100 | 95/50 → happiness 100, hunger 55 (automated) | ✅ |
+| > 80 for 2:59, then drops to 80 | No win; streak cancelled | Happiness 100 for 2:59, Feed drops it to exactly 80; no win at the old 3:00 deadline, streak text cleared (automated) | ✅ |
+| Rises above 80 again for 3:00 | Fresh timer; win at 3:00 | Play → 90; no win at 2:59, win at 3:00 (automated) | ✅ |
+| Win stops the hunger timer | Meters frozen after win | Meters unchanged 90 s after win; Feed/Play disabled (automated) | ✅ |
+| Hunger 95 → 100, then another tick | No penalty, then −20 happiness | 50/95 → tick → 50/100 → tick → 30/100 (automated) | ✅ |
+| Hunger 100 and happiness ≤ 10 | Game over; actions disabled | 30/100 → overflow tick → 10/100: "Game over", "I need a rest.", Feed/Play disabled, meters frozen for 2 more minutes (automated) | ✅ |
+| Leave screen / close app with timer running | No "setState() called after dispose()" | Covered by automated tests (screen disposed with no pending timers) | ✅ |
+| Reduced motion off | Bounce plays | Feed → pet scale 1.12, back to 1.0 after 180 ms (automated) | ✅ |
+| Reduced motion on | No bounce; zero-duration animations; values still shown | Feed → scale stays 1.0; `AnimatedScale` and meter durations are zero; meters and mood label still shown (automated) | ✅ |
 
-`flutter test` result: _paste output_
+### Automated tests
+
+```
+flutter test
+```
+
+- `test/widget_test.dart`: Feed updates hunger 50 → 40 and happiness 50 → 60; the screen disposes with no pending timers.
+- `test/mood_threshold_test.dart`: happiness 29 / 30 / 70 / 71 produce the correct label, `ColorFiltered` tint, and scale.
+- `test/game_rules_test.dart`: feed/play boundaries, hunger overflow, win cancel and restart, win at 3:00, game over, and motion on/off. Uses Flutter's fake clock so the 30-second ticks and 3-minute win run instantly.
+
+Result: all 14 tests pass.
 
 ## Screenshots
 
-_Add real screenshots: happy, neutral, unhappy, paused, win, game over, reduced motion._
+| Neutral (50) | Neutral (70) | Neutral (30) | Unhappy (10) |
+|---|---|---|---|
+| ![](screenshots/01_neutral_50.png) | ![](screenshots/02_neutral_70.png) | ![](screenshots/03_neutral_30.png) | ![](screenshots/04_unhappy_10.png) |
+
+| Happy (90) | Paused | Win |
+|---|---|---|
+| ![](screenshots/05_happy_90.png) | ![](screenshots/06_paused.png) | ![](screenshots/07_win.png) |
 
 ## Workflow evidence
 
-- Issues (one per core feature and advanced feature): _links_
-- Care Systems PR: _link_ (self-reviewed against the test matrix before merge)
-- Pet Personality PR: _link_ (self-reviewed against the test matrix before merge)
+- Pull request: [#1 feat: digital pet care loop, session controls, visual polish](https://github.com/Omswaroopreddyudumula/digital-pet-activity07/pull/1), merged into `main` after `flutter analyze` (no issues) and `flutter test` (all passed).
 
 ## Asset attribution
 
 `assets/pet.png` — original artwork created for this project (no third-party license). Light/near-white so `BlendMode.modulate` shows the mood tint clearly. If the asset is missing, the app falls back to a tinted `Icons.pets` icon.
+
+## Design note
+
+Timer ownership: both timers live in the pet screen's `State` because they drive that screen's state and must be cancelled with it in `dispose()`. Pause cancels both timers instead of skipping ticks, so nothing changes while paused. The trade-off is that resuming restarts the 30-second interval and the 3-minute streak, which is stricter for the player but keeps "continuous" easy to reason about and test.
